@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Default news</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	</head>
+<body>
+<style>
+	.header-in-line {
+		display:inline-block;
+		text-overflow: ellipsis;
+	}
+	.no-visible {
+		display: none;
+	}
+	.post-image {
+		max-height: 150px;
+		height: 100%;
+		max-width: 100%;
+		display: block;
+		margin: auto;
+	}
+	.f-top-block{
+		position: fixed;
+		background-color: white;
+		z-index: 3;
+		width: 100%;
+		padding-bottom: 10px;
+		padding-left: 20px;
+	}
+
+	#posts-list {
+		margin-top: 200px;
+	}
+
+	.sidenav {
+		height: 100%;
+		width: 160px;
+		position: fixed;
+		z-index: 1;
+		top: 0;
+		left: 0;
+		background-color: #5FCB71;
+		overflow-x: hidden;
+		padding-top: 20px;
+	}
+
+</style>
+<div class="sidenav">
+	<button class="btn btn-success header-in-line" onclick="preDispatch()"> Search</button>
+	<h3> <span class="badge badge-secondary">Country</span></h3>
+	<select id="country" class="browser-default custom-select header-in-line">
+		<option value="1">United states</option>
+		<option value="2">Germany</option>
+		<option selected>Ukraine</option>
+	</select>
+	<h3> <span class="badge badge-secondary">Topic</span></h3>
+	<select id="topic" class="browser-default custom-select header-in-line">
+		<option selected>All</option>
+		<option value="1">Entertainment</option>
+		<option value="2">Health</option>
+		<option value="3">Science</option>
+		<option value="4">Sports</option>
+		<option value="5">Technology</option>
+	</select>
+</div>
+	<div class="container">
+		<div class="row">
+			<div id="posts-list" class="col-lg-12">
+			</div>
+		</div>
+	</div>
+		<script type="text/javascript">
+			var categories = [
+				['Entertainment', 'entertainment'],
+				['Health', 'health'],
+				['Science', 'science'],
+				['Sports', 'sports'],
+				['Technology', 'technology']
+			];
+
+			var countrieCodes = [
+				['Ukraine', 'ua'],
+				['United states', 'us'],
+				['Germany', 'de']
+			];
+
+			$('document').ready(function () {
+				createPostByCountry();
+			});
+
+			function preDispatch()
+			{
+				var leng_obj = document.getElementById("country");
+				var topic_obj = document.getElementById("topic");
+				var global_leng = leng_obj.options[leng_obj.selectedIndex].innerHTML;
+				var global_topic = topic_obj.options[topic_obj.selectedIndex].innerHTML;
+
+				if(global_topic !== 'All') {
+					resetPostsList();
+				} else if (global_topic === 'All') {
+					createPostByCountry();
+				}
+
+				getNews(setSearchQuery(global_leng,global_topic));
+			}
+
+			function getCountryCode(country) {
+				var result;
+
+				for(var i = 0; i < countrieCodes.length; i++) {
+					if(country === countrieCodes[i][0]) {
+						result = countrieCodes[i][1];
+					}
+				}
+
+				return result;
+			}
+
+			function getCategory(category) {
+				var result;
+
+				for(var i = 0; i < categories.length; i++) {
+					if(category === categories[i][0]) {
+						result = categories[i][1];
+					}
+				}
+
+				return result;
+			}
+
+
+			function setSearchQuery(country, category) {
+				var countryCode = getCountryCode(country);
+				var categories = getCategory(category);
+
+				var result = `country=${countryCode}&category=${categories}&`;
+
+				return result;
+			}
+
+			function getNews(searchQuery){
+				var url = `https://newsapi.org/v2/top-headlines?${searchQuery}apiKey=96a0195809c94bcb850be5439e607a39`;
+				var request = new XMLHttpRequest();
+				request.open("GET", url, true);
+				request.send();
+
+
+				request.onload = function() {
+					var result = JSON.parse(request.responseText);
+					generatePosts(result);
+				};
+			}
+
+			function generatePosts(news) {
+				news.articles.forEach(function(element) {
+					//console.log(element);
+					createPost(element);
+				});
+
+				return 0;
+			}
+
+			function createPost(article) {
+				var post = document.createElement("div");
+				post.classList.add("col-lg-3");
+				post.classList.add("header-in-line");
+
+				post.appendChild(createPostImage(article.urlToImage));
+				post.appendChild(createPostTitle(article.title));
+				post.appendChild(createPostDescrip(article.description));
+				post.appendChild(createPostDescrip(article.publishedAt));
+				post.appendChild(createSourceUrl(article.url));
+
+				document.getElementById("posts-list").appendChild(post);
+			}
+
+			function createPostImage(img) {
+				var image = document.createElement("img");
+				image.classList.add("rounded");
+				image.classList.add("post-image");
+				image.src = img;
+
+				return image;
+			}
+
+			function createPostTitle(arTitle) {
+				var title = document.createElement("h4");
+				title.innerHTML = arTitle;
+
+				return title;
+			}
+
+			function createPostDescrip(descrip) {
+				var desc = document.createElement("p");
+				desc.innerHTML = descrip;
+
+				return desc;
+			}
+
+			function createPublishDate(pDate) {
+				var date = document.createElement("p");
+				date.innerHTML = pDate;
+
+				return date;
+			}
+
+			function createSourceUrl(sUrl) {
+				var url = document.createElement("a");
+				url.setAttribute("target", "_blank");
+				url.href = sUrl;
+
+				var btn = document.createElement("button");
+				btn.innerHTML = "Read more";
+				//btn.classList.add("btn btn-primary");
+
+				url.appendChild(btn);
+
+				return url;
+			}
+
+			function resetPostsList()
+			{
+				document.getElementById("posts-list").innerHTML = '';
+			}
+
+			function createPostByCountry() {
+				resetPostsList();
+				var leng_obj = document.getElementById("country");
+				var global_leng = leng_obj.options[leng_obj.selectedIndex].innerHTML;
+
+				categories.forEach(function(element) {
+					createCategoryLabel(element[0]);
+					getNews(setSearchQuery(global_leng,element[0]));
+				});
+			}
+
+			function createCategoryLabel(label) {
+				var mLabel = document.createElement("div");
+				mLabel.innerHTML = label;
+
+
+				document.getElementById("posts-list").appendChild(mLabel);
+			}
+
+		</script>
+</body>
+</html>
